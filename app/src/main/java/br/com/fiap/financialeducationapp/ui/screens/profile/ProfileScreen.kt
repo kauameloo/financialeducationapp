@@ -30,7 +30,7 @@ fun ProfileScreen(
     navController: NavController,
     viewModel: ProfileViewModel = viewModel()
 ) {
-    val user by viewModel.user.collectAsState(initial = null)
+    val user by viewModel.user.collectAsState()
     var showEditDialog by remember { mutableStateOf(false) }
 
     var name by remember { mutableStateOf("") }
