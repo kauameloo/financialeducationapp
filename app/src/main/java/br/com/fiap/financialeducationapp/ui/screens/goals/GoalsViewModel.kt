@@ -1,65 +1,47 @@
 package br.com.fiap.financialeducationapp.ui.screens.goals
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.com.fiap.financialeducationapp.data.model.SavingsGoal
-import kotlinx.coroutines.flow.MutableStateFlow
+import br.com.fiap.financialeducationapp.data.repository.GoalsRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.util.UUID
+import javax.inject.Inject
 
-class GoalsViewModel(application: Application) : AndroidViewModel(application) {
+@HiltViewModel
+class GoalsViewModel @Inject constructor(
+    private val goalsRepository: GoalsRepository
+) : ViewModel() {
 
-    private val _goals = MutableStateFlow<List<SavingsGoal>>(emptyList())
-    val goals: StateFlow<List<SavingsGoal>> = _goals
-
-    // Dados de exemplo para teste
-    init {
-        // Adicionar alguns dados de exemplo
-        val sampleGoals = listOf(
-            SavingsGoal(
-                id = UUID.randomUUID().toString(),
-                title = "Fundo de Emergência",
-                targetAmount = 10000.0,
-                currentAmount = 3500.0,
-                deadline = System.currentTimeMillis() + 15552000000 // 6 meses em milissegundos
-            ),
-            SavingsGoal(
-                id = UUID.randomUUID().toString(),
-                title = "Viagem de Férias",
-                targetAmount = 5000.0,
-                currentAmount = 1200.0,
-                deadline = System.currentTimeMillis() + 31104000000 // 12 meses em milissegundos
-            ),
-            SavingsGoal(
-                id = UUID.randomUUID().toString(),
-                title = "Novo Notebook",
-                targetAmount = 3000.0,
-                currentAmount = 800.0,
-                deadline = System.currentTimeMillis() + 7776000000 // 3 meses em milissegundos
-            )
+    val goals: StateFlow<List<SavingsGoal>> = goalsRepository.getAllSavingsGoals()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
         )
-        _goals.value = sampleGoals
-    }
 
     fun addGoal(title: String, targetAmount: Double, deadline: Long?) {
-        val goal = SavingsGoal(
-            id = UUID.randomUUID().toString(),
-            title = title,
-            targetAmount = targetAmount,
-            currentAmount = 0.0,
-            deadline = deadline
-        )
-        _goals.value = _goals.value + goal
+        viewModelScope.launch {
+            goalsRepository.addSavingsGoal(
+                title = title,
+                targetAmount = targetAmount,
+                deadline = deadline
+            )
+        }
     }
 
     fun updateGoalAmount(goal: SavingsGoal, newAmount: Double) {
-        val updatedGoal = goal.copy(currentAmount = newAmount)
-        _goals.value = _goals.value.map { if (it.id == goal.id) updatedGoal else it }
+        viewModelScope.launch {
+            goalsRepository.updateSavingsGoalAmount(goal, newAmount)
+        }
     }
 
     fun deleteGoal(goal: SavingsGoal) {
-        _goals.value = _goals.value.filter { it.id != goal.id }
+        viewModelScope.launch {
+            goalsRepository.deleteSavingsGoal(goal)
+        }
     }
 }

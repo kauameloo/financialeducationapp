@@ -1,40 +1,51 @@
 package br.com.fiap.financialeducationapp.data.repository
 
-import br.com.fiap.financialeducationapp.data.local.dao.UserDao
-import br.com.fiap.financialeducationapp.data.local.entity.UserEntity
+import br.com.fiap.financialeducationapp.data.dao.UserDao
 import br.com.fiap.financialeducationapp.data.model.User
+import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Singleton
 
-class UserRepository @Inject constructor(
-    private val userDao: UserDao
-) {
-    suspend fun getUser(): User? {
-        return userDao.getUser()?.toUser()
-    }
+@Singleton
+class UserRepository @Inject constructor(private val userDao: UserDao) {
 
-    suspend fun saveUser(user: User) {
-        userDao.insertUser(user.toEntity())
+    fun getUser(): Flow<User?> = userDao.getUser()
+
+    suspend fun createOrUpdateUser(
+        name: String,
+        email: String,
+        incomeRange: String,
+        financialGoals: List<String>
+    ) {
+        val existingUser = userDao.getUser()
+
+        // Verificar se já existe um usuário e atualizá-lo, ou criar um novo
+        val user = User(
+            id = UUID.randomUUID().toString(),
+            name = name,
+            email = email,
+            incomeRange = incomeRange,
+            financialGoals = financialGoals
+        )
+
+        userDao.insertUser(user)
     }
 
     suspend fun updateUser(user: User) {
-        userDao.updateUser(user.toEntity())
+        userDao.updateUser(user)
     }
 
-    private fun UserEntity.toUser(): User {
-        return User(
-            id = id,
-            name = name,
-            email = email,
-            incomeRange = incomeRange
+    // Método para criar um usuário padrão se não existir nenhum
+    suspend fun createDefaultUserIfNotExists() {
+        val defaultUser = User(
+            id = UUID.randomUUID().toString(),
+            name = "João Silva",
+            email = "joao.silva@exemplo.com",
+            incomeRange = "R$ 3.000 - R$ 5.000",
+            financialGoals = listOf("Economizar para aposentadoria", "Comprar uma casa", "Investir em educação")
         )
-    }
 
-    private fun User.toEntity(): UserEntity {
-        return UserEntity(
-            id = id,
-            name = name,
-            email = email,
-            incomeRange = incomeRange
-        )
+        userDao.insertUser(defaultUser)
     }
 }

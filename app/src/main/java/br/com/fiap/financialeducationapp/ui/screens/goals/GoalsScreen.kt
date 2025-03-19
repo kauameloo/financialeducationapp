@@ -3,8 +3,7 @@ package br.com.fiap.financialeducationapp.ui.screens.goals
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -13,266 +12,91 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.hilt.navigation.compose.hiltViewModel
 import br.com.fiap.financialeducationapp.data.model.SavingsGoal
-import br.com.fiap.financialeducationapp.ui.components.SectionHeader
-import br.com.fiap.financialeducationapp.ui.theme.ProgressBlue
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GoalsScreen(
-    navController: NavController,
-    viewModel: GoalsViewModel = viewModel()
+    viewModel: GoalsViewModel = hiltViewModel()
 ) {
-    val goals by viewModel.goals.collectAsState(initial = emptyList())
+    val goals by viewModel.goals.collectAsState()
 
     var showAddDialog by remember { mutableStateOf(false) }
-    var showDepositDialog by remember { mutableStateOf(false) }
     var selectedGoal by remember { mutableStateOf<SavingsGoal?>(null) }
-
-    var title by remember { mutableStateOf("") }
-    var targetAmount by remember { mutableStateOf("") }
-    var targetDate by remember { mutableStateOf("") }
-    var depositAmount by remember { mutableStateOf("") }
-
-    val currencyFormatter = remember { NumberFormat.getCurrencyInstance(Locale("pt", "BR")) }
-    val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        // Header
-        Text(
-            text = "Metas de Economia",
-            style = MaterialTheme.typography.displayMedium,
-            fontWeight = FontWeight.Bold
-        )
-
-        Text(
-            text = "Defina objetivos e acompanhe seu progresso",
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(top = 4.dp)
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Card informativo
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Dica para Economizar",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Defina metas específicas e realistas. Divida grandes objetivos em etapas menores para facilitar o acompanhamento.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Botão de adicionar
-        Button(
-            onClick = { showAddDialog = true },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Adicionar",
-                modifier = Modifier.size(20.dp)
+            Text(
+                text = "Metas de Economia",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Criar Nova Meta")
+
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Adicionar meta"
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Lista de metas
-        SectionHeader(title = "Suas Metas")
-
-        if (goals.isEmpty()) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Você ainda não tem metas definidas",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(350.dp)
-            ) {
-                items(goals) { goal ->
-                    GoalItem(
-                        goal = goal,
-                        currencyFormatter = currencyFormatter,
-                        dateFormatter = dateFormatter,
-                        onDelete = { viewModel.deleteGoal(goal) },
-                        onDeposit = {
-                            selectedGoal = goal
-                            showDepositDialog = true
-                        }
-                    )
-                }
+        LazyColumn(
+            modifier = Modifier.weight(1f)
+        ) {
+            items(goals) { goal ->
+                GoalItem(
+                    goal = goal,
+                    onUpdate = {
+                        selectedGoal = goal
+                        showUpdateDialog = true
+                    },
+                    onDelete = { viewModel.deleteGoal(goal) }
+                )
             }
         }
     }
 
-    // Diálogo para adicionar nova meta
     if (showAddDialog) {
-        AlertDialog(
-            onDismissRequest = { showAddDialog = false },
-            title = { Text("Criar Nova Meta") },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        label = { Text("Título da Meta") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                    )
-
-                    OutlinedTextField(
-                        value = targetAmount,
-                        onValueChange = { targetAmount = it },
-                        label = { Text("Valor Alvo (R$)") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                    )
-
-                    OutlinedTextField(
-                        value = targetDate,
-                        onValueChange = { targetDate = it },
-                        label = { Text("Data Alvo (DD/MM/AAAA)") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        try {
-                            val amount = targetAmount.toDoubleOrNull() ?: 0.0
-                            val deadline = try {
-                                dateFormatter.parse(targetDate)?.time
-                            } catch (e: Exception) {
-                                null
-                            }
-
-                            if (title.isNotBlank() && amount > 0) {
-                                viewModel.addGoal(title, amount, deadline)
-
-                                title = ""
-                                targetAmount = ""
-                                targetDate = ""
-                                showAddDialog = false
-                            }
-                        } catch (e: Exception) {
-                            // Tratar erro de formato de data
-                        }
-                    }
-                ) {
-                    Text("Adicionar")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showAddDialog = false }
-                ) {
-                    Text("Cancelar")
-                }
+        AddGoalDialog(
+            onDismiss = { showAddDialog = false },
+            onAddGoal = { title, targetAmount, deadline ->
+                viewModel.addGoal(title, targetAmount, deadline)
+                showAddDialog = false
             }
         )
     }
 
-    // Diálogo para adicionar depósito
-    if (showDepositDialog && selectedGoal != null) {
-        AlertDialog(
-            onDismissRequest = {
-                showDepositDialog = false
-                selectedGoal = null
-            },
-            title = { Text("Adicionar Depósito") },
-            text = {
-                Column {
-                    Text(
-                        text = "Meta: ${selectedGoal?.title}",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-
-                    OutlinedTextField(
-                        value = depositAmount,
-                        onValueChange = { depositAmount = it },
-                        label = { Text("Valor do Depósito (R$)") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val amount = depositAmount.toDoubleOrNull() ?: 0.0
-                        selectedGoal?.let { goal ->
-                            viewModel.updateGoalAmount(goal, goal.currentAmount + amount)
-                        }
-
-                        depositAmount = ""
-                        showDepositDialog = false
-                        selectedGoal = null
-                    }
-                ) {
-                    Text("Depositar")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showDepositDialog = false
-                        selectedGoal = null
-                    }
-                ) {
-                    Text("Cancelar")
-                }
+    if (showUpdateDialog && selectedGoal != null) {
+        UpdateGoalDialog(
+            goal = selectedGoal!!,
+            onDismiss = { showUpdateDialog = false },
+            onUpdateGoal = { newAmount ->
+                viewModel.updateGoalAmount(selectedGoal!!, newAmount)
+                showUpdateDialog = false
             }
         )
     }
@@ -281,18 +105,16 @@ fun GoalsScreen(
 @Composable
 fun GoalItem(
     goal: SavingsGoal,
-    currencyFormatter: NumberFormat,
-    dateFormatter: SimpleDateFormat,
-    onDelete: () -> Unit,
-    onDeposit: () -> Unit
+    onUpdate: () -> Unit,
+    onDelete: () -> Unit
 ) {
-    val progress = (goal.currentAmount / goal.targetAmount).coerceIn(0.0, 1.0).toFloat()
+    val progress = (goal.currentAmount / goal.targetAmount).coerceIn(0.0, 1.0)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column(
             modifier = Modifier
@@ -306,24 +128,30 @@ fun GoalItem(
             ) {
                 Text(
                     text = goal.title,
-                    style = MaterialTheme.typography.headlineSmall,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
 
                 Row {
-                    IconButton(onClick = onDeposit) {
+                    IconButton(
+                        onClick = onUpdate,
+                        modifier = Modifier.size(32.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Edit,
-                            contentDescription = "Depositar",
+                            contentDescription = "Atualizar meta",
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
 
-                    IconButton(onClick = onDelete) {
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.size(32.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Excluir",
-                            tint = MaterialTheme.colorScheme.error
+                            contentDescription = "Excluir meta",
+                            tint = Color.Gray
                         )
                     }
                 }
@@ -331,42 +159,232 @@ fun GoalItem(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = "Meta: ${currencyFormatter.format(goal.targetAmount)}",
-                style = MaterialTheme.typography.bodyLarge
+            LinearProgressIndicator(
+                progress = progress.toFloat(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
             )
-
-            Text(
-                text = "Atual: ${currencyFormatter.format(goal.currentAmount)}",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            goal.deadline?.let { deadline ->
-                Text(
-                    text = "Data alvo: ${dateFormatter.format(Date(deadline))}",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            LinearProgressIndicator(
-                progress = progress,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp),
-                color = ProgressBlue,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "${formatCurrency(goal.currentAmount)} de ${formatCurrency(goal.targetAmount)}",
+                    fontSize = 14.sp
+                )
 
-            Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "${(progress * 100).toInt()}%",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
 
-            Text(
-                text = "${(progress * 100).toInt()}% concluído",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.align(Alignment.End)
-            )
+            if (goal.deadline != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Prazo: ${formatDate(goal.deadline)}",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
         }
+    }
+}
+
+@Composable
+fun AddGoalDialog(
+    onDismiss: () -> Unit,
+    onAddGoal: (String, Double, Long?) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var amountText by remember { mutableStateOf("") }
+    var hasDeadline by remember { mutableStateOf(false) }
+    var deadlineText by remember { mutableStateOf("") }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    text = "Nova Meta",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Título") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                )
+
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = { amountText = it },
+                    label = { Text("Valor Alvo (R$)") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                ) {
+                    Checkbox(
+                        checked = hasDeadline,
+                        onCheckedChange = { hasDeadline = it }
+                    )
+                    Text("Definir prazo")
+                }
+
+                if (hasDeadline) {
+                    OutlinedTextField(
+                        value = deadlineText,
+                        onValueChange = { deadlineText = it },
+                        label = { Text("Prazo (DD/MM/AAAA)") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Text("Cancelar")
+                    }
+
+                    Button(
+                        onClick = {
+                            val amount = amountText.toDoubleOrNull() ?: 0.0
+                            val deadline = if (hasDeadline) parseDate(deadlineText) else null
+
+                            if (title.isNotBlank() && amount > 0) {
+                                onAddGoal(title, amount, deadline)
+                            }
+                        },
+                        enabled = title.isNotBlank() && amountText.toDoubleOrNull() != null &&
+                                (!hasDeadline || isValidDate(deadlineText))
+                    ) {
+                        Text("Adicionar")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun UpdateGoalDialog(
+    goal: SavingsGoal,
+    onDismiss: () -> Unit,
+    onUpdateGoal: (Double) -> Unit
+) {
+    var currentAmountText by remember { mutableStateOf(goal.currentAmount.toString()) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    text = "Atualizar Meta: ${goal.title}",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                Text(
+                    text = "Valor Alvo: ${formatCurrency(goal.targetAmount)}",
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                OutlinedTextField(
+                    value = currentAmountText,
+                    onValueChange = { currentAmountText = it },
+                    label = { Text("Valor Atual (R$)") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Text("Cancelar")
+                    }
+
+                    Button(
+                        onClick = {
+                            val newAmount = currentAmountText.toDoubleOrNull() ?: 0.0
+                            onUpdateGoal(newAmount)
+                        },
+                        enabled = currentAmountText.toDoubleOrNull() != null
+                    ) {
+                        Text("Atualizar")
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Funções utilitárias
+private fun formatCurrency(value: Double): String {
+    val format = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+    return format.format(value)
+}
+
+private fun formatDate(timestamp: Long): String {
+    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
+    return dateFormat.format(Date(timestamp))
+}
+
+private fun parseDate(dateString: String): Long? {
+    return try {
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
+        dateFormat.parse(dateString)?.time
+    } catch (e: Exception) {
+        null
+    }
+}
+
+private fun isValidDate(dateString: String): Boolean {
+    return try {
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
+        dateFormat.parse(dateString)
+        true
+    } catch (e: Exception) {
+        false
     }
 }

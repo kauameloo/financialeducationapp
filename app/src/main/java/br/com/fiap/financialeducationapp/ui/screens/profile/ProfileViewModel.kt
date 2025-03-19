@@ -1,32 +1,31 @@
 package br.com.fiap.financialeducationapp.ui.screens.profile
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.com.fiap.financialeducationapp.data.model.User
-import kotlinx.coroutines.flow.MutableStateFlow
+import br.com.fiap.financialeducationapp.data.repository.UserRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.util.UUID
+import javax.inject.Inject
 
-class ProfileViewModel(application: Application) : AndroidViewModel(application) {
+@HiltViewModel
+class ProfileViewModel @Inject constructor(
+    private val userRepository: UserRepository
+) : ViewModel() {
 
-    private val _user = MutableStateFlow<User?>(null)
-    val user: StateFlow<User?> = _user
-
-    init {
-        // Criar um usuário de exemplo
-        val defaultUser = User(
-            id = UUID.randomUUID().toString(),
-            name = "João Silva",
-            email = "joao.silva@exemplo.com",
-            incomeRange = "R$ 3.000 - R$ 5.000",
-            financialGoals = listOf("Economizar para aposentadoria", "Comprar uma casa", "Investir em educação")
+    val user: StateFlow<User?> = userRepository.getUser()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
         )
-        _user.value = defaultUser
-    }
 
     fun updateUser(updatedUser: User) {
-        _user.value = updatedUser
+        viewModelScope.launch {
+            userRepository.updateUser(updatedUser)
+        }
     }
 }

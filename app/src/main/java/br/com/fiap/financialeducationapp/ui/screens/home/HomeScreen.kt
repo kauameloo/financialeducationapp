@@ -1,29 +1,37 @@
 package br.com.fiap.financialeducationapp.ui.screens.home
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import br.com.fiap.financialeducationapp.ui.components.SectionHeader
 import br.com.fiap.financialeducationapp.ui.navigation.Screen
-import br.com.fiap.financialeducationapp.ui.theme.IncomeGreen
-import br.com.fiap.financialeducationapp.ui.theme.ExpenseRed
+import br.com.fiap.financialeducationapp.ui.screens.budget.BudgetViewModel
+import java.text.NumberFormat
+import java.util.*
 
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(
+    navController: NavController,
+    budgetViewModel: BudgetViewModel = hiltViewModel()
+) {
+    val totalIncome by budgetViewModel.totalIncome.collectAsState()
+    val totalExpenses by budgetViewModel.totalExpenses.collectAsState()
+    val balance = totalIncome - totalExpenses
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -33,7 +41,7 @@ fun HomeScreen(navController: NavController) {
         // Welcome section
         Text(
             text = "Bem-vindo ao FinEdu",
-            style = MaterialTheme.typography.displayMedium,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
 
@@ -54,28 +62,29 @@ fun HomeScreen(navController: NavController) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "Resumo Financeiro",
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Receitas: R$ 2.500,00",
+                    text = "Receitas: ${formatCurrency(totalIncome)}",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = IncomeGreen
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 Text(
-                    text = "Despesas: R$ 1.800,00",
+                    text = "Despesas: ${formatCurrency(totalExpenses)}",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = ExpenseRed,
+                    color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 8.dp)
                 )
 
                 Text(
-                    text = "Saldo: R$ 700,00",
+                    text = "Saldo: ${formatCurrency(balance)}",
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    color = if (balance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
@@ -107,13 +116,75 @@ fun HomeScreen(navController: NavController) {
 }
 
 @Composable
+fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleLarge,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(bottom = 12.dp)
+    )
+}
+
+@Composable
 fun QuickActionButtons(
     onBudgetClick: () -> Unit,
     onGoalsClick: () -> Unit,
     onCoursesClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Implementation will be added in the next part
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        QuickActionButton(
+            icon = Icons.Default.AccountBalance,
+            label = "Orçamento",
+            onClick = onBudgetClick
+        )
+
+        QuickActionButton(
+            icon = Icons.Default.Star,
+            label = "Metas",
+            onClick = onGoalsClick
+        )
+
+        QuickActionButton(
+            icon = Icons.Default.School,
+            label = "Cursos",
+            onClick = onCoursesClick
+        )
+    }
+}
+
+@Composable
+fun QuickActionButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+            .padding(8.dp)
+    ) {
+        FilledIconButton(
+            onClick = onClick,
+            modifier = Modifier.size(56.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+    }
 }
 
 @Composable
@@ -122,7 +193,7 @@ fun FinancialTipCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.padding(horizontal = 16.dp),
+        modifier = modifier,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -132,4 +203,10 @@ fun FinancialTipCard(
             )
         }
     }
+}
+
+// Função utilitária para formatação de moeda
+private fun formatCurrency(value: Double): String {
+    val format = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+    return format.format(value)
 }

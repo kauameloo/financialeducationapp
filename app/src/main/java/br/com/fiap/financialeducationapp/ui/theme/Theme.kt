@@ -47,7 +47,7 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 @Composable
-fun FinancialEducationTheme(
+fun FinancialEducationAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {

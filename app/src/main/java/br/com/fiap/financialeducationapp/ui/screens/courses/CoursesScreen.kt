@@ -11,29 +11,35 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import br.com.fiap.financialeducationapp.data.model.Course
-import br.com.fiap.financialeducationapp.data.repository.CourseRepository
 import br.com.fiap.financialeducationapp.ui.components.CourseCard
 import br.com.fiap.financialeducationapp.ui.navigation.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CoursesScreen(navController: NavController) {
-    // In a real app, this would come from a ViewModel
-    val courseRepository = remember { CourseRepository() }
-    val courses = remember { courseRepository.getCourses() }
+fun CoursesScreen(
+    navController: NavController,
+    viewModel: CoursesViewModel = hiltViewModel()
+) {
+    val courses by viewModel.courses.collectAsState()
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text("Cursos de Educação Financeira") }
-        )
-
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Cursos de Educação Financeira") }
+            )
+        }
+    ) { paddingValues ->
         LazyColumn(
-            contentPadding = PaddingValues(16.dp)
+            contentPadding = PaddingValues(16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
         ) {
             items(courses) { course ->
                 CourseCard(

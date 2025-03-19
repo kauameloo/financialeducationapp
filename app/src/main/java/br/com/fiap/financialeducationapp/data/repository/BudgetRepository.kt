@@ -1,52 +1,69 @@
 package br.com.fiap.financialeducationapp.data.repository
 
-import br.com.fiap.financialeducationapp.data.local.dao.BudgetDao
-import br.com.fiap.financialeducationapp.data.local.entity.BudgetEntryEntity
+import br.com.fiap.financialeducationapp.data.dao.BudgetEntryDao
 import br.com.fiap.financialeducationapp.data.model.BudgetEntry
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Singleton
 
-class BudgetRepository @Inject constructor(
-    private val budgetDao: BudgetDao
-) {
-    fun getAllBudgetEntries(): Flow<List<BudgetEntry>> {
-        return budgetDao.getAllBudgetEntries().map { entities ->
-            entities.map { it.toBudgetEntry() }
-        }
-    }
+@Singleton
+class BudgetRepository @Inject constructor(private val budgetEntryDao: BudgetEntryDao) {
 
-    fun getBudgetEntriesForPeriod(startDate: Long, endDate: Long): Flow<List<BudgetEntry>> {
-        return budgetDao.getBudgetEntriesForPeriod(startDate, endDate).map { entities ->
-            entities.map { it.toBudgetEntry() }
-        }
-    }
+    fun getAllBudgetEntries(): Flow<List<BudgetEntry>> = budgetEntryDao.getAllBudgetEntries()
 
-    suspend fun addBudgetEntry(entry: BudgetEntry) {
-        budgetDao.insertBudgetEntry(entry.toEntity())
+    fun getAllIncome(): Flow<List<BudgetEntry>> = budgetEntryDao.getAllIncome()
+
+    fun getAllExpenses(): Flow<List<BudgetEntry>> = budgetEntryDao.getAllExpenses()
+
+    suspend fun addBudgetEntry(amount: Double, category: String, date: Long, isExpense: Boolean) {
+        val entry = BudgetEntry(
+            id = UUID.randomUUID().toString(),
+            amount = amount,
+            category = category,
+            date = date,
+            isExpense = isExpense
+        )
+        budgetEntryDao.insertBudgetEntry(entry)
     }
 
     suspend fun deleteBudgetEntry(entry: BudgetEntry) {
-        budgetDao.deleteBudgetEntry(entry.toEntity())
+        budgetEntryDao.deleteBudgetEntry(entry)
     }
 
-    private fun BudgetEntryEntity.toBudgetEntry(): BudgetEntry {
-        return BudgetEntry(
-            id = id,
-            amount = amount,
-            category = category,
-            date = date,
-            isExpense = isExpense
+    // Método para adicionar dados de exemplo
+    suspend fun addSampleData() {
+        val sampleEntries = listOf(
+            BudgetEntry(
+                id = UUID.randomUUID().toString(),
+                amount = 2500.0,
+                category = "Salário",
+                date = System.currentTimeMillis(),
+                isExpense = false
+            ),
+            BudgetEntry(
+                id = UUID.randomUUID().toString(),
+                amount = 800.0,
+                category = "Aluguel",
+                date = System.currentTimeMillis(),
+                isExpense = true
+            ),
+            BudgetEntry(
+                id = UUID.randomUUID().toString(),
+                amount = 350.0,
+                category = "Supermercado",
+                date = System.currentTimeMillis(),
+                isExpense = true
+            ),
+            BudgetEntry(
+                id = UUID.randomUUID().toString(),
+                amount = 200.0,
+                category = "Transporte",
+                date = System.currentTimeMillis(),
+                isExpense = true
+            )
         )
-    }
 
-    private fun BudgetEntry.toEntity(): BudgetEntryEntity {
-        return BudgetEntryEntity(
-            id = id,
-            amount = amount,
-            category = category,
-            date = date,
-            isExpense = isExpense
-        )
+        sampleEntries.forEach { budgetEntryDao.insertBudgetEntry(it) }
     }
 }
